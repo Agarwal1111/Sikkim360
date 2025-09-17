@@ -1,118 +1,220 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Sikkim Monasteries 360 — Stylish Hotspots</title>
+  <title>Sikkim Monasteries 360° — Virtual Tour</title>
 
-  <!-- Photo Sphere Viewer CSS + Markers plugin CSS -->
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Raleway:wght@400;600&display=swap" rel="stylesheet">
+
+  <!-- Photo Sphere Viewer CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photo-sphere-viewer@4/dist/photo-sphere-viewer.min.css"/>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photo-sphere-viewer@4/dist/plugins/markers.css"/>
 
   <style>
     body {
       margin:0;
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      color:#fff;
       display:flex;
       flex-direction:column;
       align-items:center;
-      font-family:Arial, sans-serif;
-      background:#fafafa;
+      min-height:100vh;
+      overflow-x:hidden;
+      position: relative;
     }
-    h2 { margin:16px 0 8px; }
+
+    /* Premium animated background */
+    #bg-animation {
+      position: fixed;
+      top:0; left:0;
+      width:100%; height:100%;
+      z-index:-1;
+      background: radial-gradient(circle at 20% 30%, rgba(255,255,255,0.05), transparent 40%),
+                  radial-gradient(circle at 80% 70%, rgba(255,255,255,0.05), transparent 40%);
+      animation: bgmove 10s infinite alternate ease-in-out;
+    }
+    @keyframes bgmove {
+      from { transform: scale(1) translateY(0px); }
+      to   { transform: scale(1.1) translateY(-15px); }
+    }
+
+    h2 {
+      margin:30px 0 15px;
+      font-weight:700;
+      font-size:2rem;
+      text-align:center;
+      background: linear-gradient(90deg,#00c6ff,#1a73e8,#00ffcc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: glowPulse 3s infinite alternate;
+    }
+    @keyframes glowPulse {
+      from { text-shadow: 0 0 5px rgba(0,198,255,0.6); }
+      to   { text-shadow: 0 0 20px rgba(0,198,255,1), 0 0 30px rgba(26,115,232,0.8); }
+    }
 
     #viewer {
-      width: 80%;
-      max-width: 900px;
-      height: 480px;
-      margin:12px 0 12px;
-      border-radius:10px;
-      box-shadow:0 6px 18px rgba(0,0,0,0.08);
-      background:#000;
+      position: relative;
+      width: 85%;
+      max-width: 1000px;
+      height: 520px;
+      margin:20px 0;
+      border-radius:16px;
+      overflow:hidden;
+      animation: fadeIn 1.2s ease;
+      box-shadow:0 8px 30px rgba(0,0,0,0.35);
+    }
+
+    #fadeOverlay {
+      position:absolute;
+      top:0; left:0; right:0; bottom:0;
+      background: rgba(0,0,0,0.7);
+      opacity:0;
+      transition: opacity 0.6s ease;
+      pointer-events:none;
+      border-radius:inherit;
     }
 
     #controls {
       display:flex;
       justify-content:center;
-      gap:12px;
-      margin-bottom:12px;
+      gap:14px;
+      margin-bottom:20px;
+      background: rgba(0,0,0,0.4);
+      padding:10px 20px;
+      border-radius:12px;
+      backdrop-filter: blur(6px);
+      animation: fadeInUp 1s ease;
     }
+
     button {
-      padding:8px 14px;
+      padding:10px 18px;
       font-size:15px;
       border:none;
       border-radius:8px;
       cursor:pointer;
-      background:#007bff;
+      background: linear-gradient(135deg,#1a73e8,#00c6ff);
       color:white;
-      transition:0.2s;
+      font-weight:600;
+      transition: all 0.3s ease;
+      box-shadow:0 4px 12px rgba(0,0,0,0.25);
     }
-    button:hover { background:#0056b3; }
+    button:hover {
+      transform:translateY(-2px) scale(1.02);
+      background: linear-gradient(135deg,#00c6ff,#1a73e8);
+    }
 
-    /* 🔥 Stylish Hotspot Marker */
+    /* Hotspot Marker Glow */
     .hotspot-marker {
-      width: 18px;
-      height: 18px;
+      width: 20px;
+      height: 20px;
       border-radius: 50%;
-      background: radial-gradient(circle, #ffcc33 30%, #ff9900 70%);
-      box-shadow: 0 0 10px rgba(255, 204, 51, 0.8), 0 0 20px rgba(255, 153, 0, 0.5);
+      background: radial-gradient(circle, #ffcc33 30%, #ff5722 80%);
+      box-shadow: 0 0 15px rgba(255, 204, 51, 0.9), 0 0 25px rgba(255, 87, 34, 0.8);
       animation: pulse 2s infinite;
     }
     @keyframes pulse {
-      0%   { box-shadow: 0 0 6px rgba(255,204,51,0.8), 0 0 10px rgba(255,153,0,0.5); }
-      50%  { box-shadow: 0 0 15px rgba(255,204,51,1), 0 0 25px rgba(255,153,0,0.8); }
-      100% { box-shadow: 0 0 6px rgba(255,204,51,0.8), 0 0 10px rgba(255,153,0,0.5); }
+      0%   { transform: scale(0.95); opacity:0.8; }
+      50%  { transform: scale(1.1); opacity:1; }
+      100% { transform: scale(0.95); opacity:0.8; }
     }
 
     .hotspot-label {
       margin-left: 8px;
       background: rgba(0,0,0,0.65);
-      padding: 6px 10px;
-      border-radius: 6px;
+      padding: 6px 12px;
+      border-radius: 8px;
       color: #fff;
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 600;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-    }
-    .psv-hotspot {
-      display: flex;
-      align-items: center;
-      white-space: nowrap;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+      animation: fadeIn 0.6s ease;
     }
 
-    /* 📋 Hotspot toolbar styles */
+    .psv-hotspot { display: flex; align-items: center; }
+
+    /* Toolbar */
     #hotspotToolbar {
       display:flex;
       flex-wrap:wrap;
       justify-content:center;
-      gap:8px;
-      max-width:900px;
-      margin-bottom:20px;
+      gap:10px;
+      max-width:1000px;
+      margin:10px auto 30px;
+      animation: fadeInUp 1.2s ease;
     }
     .hotspot-btn {
       background: linear-gradient(135deg,#ff9800,#ff5722);
       border:none;
       color:white;
-      font-size:13px;
-      padding:6px 10px;
-      border-radius:6px;
+      font-size:14px;
+      padding:8px 14px;
+      border-radius:8px;
       cursor:pointer;
-      transition:0.2s;
-      box-shadow:0 2px 6px rgba(0,0,0,0.2);
+      transition: all 0.3s ease;
+      box-shadow:0 3px 8px rgba(0,0,0,0.25);
     }
     .hotspot-btn:hover {
       background: linear-gradient(135deg,#ffb74d,#ff7043);
-      transform:translateY(-2px);
+      transform:translateY(-3px) scale(1.05);
     }
+
+    /* Info Panel */
+    #infoPanel {
+      position: fixed;
+      top: 0;
+      right: -400px;
+      width: 350px;
+      height: 100%;
+      background: rgba(0,0,0,0.85);
+      backdrop-filter: blur(8px);
+      color: #fff;
+      padding: 20px;
+      transition: right 0.4s ease;
+      box-shadow: -4px 0 15px rgba(0,0,0,0.5);
+      overflow-y: auto;
+      z-index: 9999;
+    }
+    #infoPanel.active { right: 0; }
+    #infoPanel h3 { margin-top:0; font-size: 1.4rem; }
+    #infoPanel p { font-size: 0.95rem; line-height: 1.5; }
+    #closePanel {
+      position:absolute;
+      top:10px;
+      right:15px;
+      background:none;
+      border:none;
+      font-size:20px;
+      color:#fff;
+      cursor:pointer;
+    }
+
+    /* Animations */
+    @keyframes fadeIn { from {opacity:0;} to {opacity:1;} }
+    @keyframes fadeInUp { from {opacity:0; transform:translateY(20px);} to {opacity:1; transform:translateY(0);} }
   </style>
 </head>
 <body>
-  <h2>Sikkim Monasteries 360° — Stylish Hotspots</h2>
-  <div id="viewer"></div>
+  <div id="bg-animation"></div>
+  <h2>Discover Sikkim Monasteries in 360°</h2>
+  <div id="viewer">
+    <div id="fadeOverlay"></div>
+  </div>
   <div id="controls">
     <button id="prevBtn">⬅ Previous</button>
     <button id="nextBtn">Next ➡</button>
   </div>
   <div id="hotspotToolbar"></div>
+
+  <!-- Sliding Info Panel -->
+  <div id="infoPanel">
+    <button id="closePanel">✖</button>
+    <h3 id="infoTitle">Hotspot Title</h3>
+    <p id="infoDetails">Hotspot details will appear here.</p>
+  </div>
 
   <!-- Dependencies -->
   <script src="https://cdn.jsdelivr.net/npm/three@0.147/build/three.min.js"></script>
@@ -121,7 +223,6 @@
   <script src="https://cdn.jsdelivr.net/npm/photo-sphere-viewer@4/dist/plugins/markers.min.js"></script>
 
   <script>
-    // Panoramas
     const panoramas = [
       { src: '1.jpg', name: 'Lingdum (Ranka) Monastery' },
       { src: '2.jpg', name: 'Enchey Monastery' },
@@ -132,7 +233,6 @@
       { src: '7.jpg', name: 'Ralong Monastery' }
     ];
 
-    // Hotspots with details
     const hotspots = {
       1: [
         { lon: 3.1422, lat: -0.0364, text: 'Main Prayer Hall', details: 'The central hall of Lingdum Monastery.' },
@@ -159,14 +259,13 @@
         { lon: 6.2507, lat: 0.5180, text: 'Stupa', details: 'Spiritual stupa surrounded by prayer wheels.' }
       ],
       7: [
-        // Add when ready
+        { lon: 1.52, lat: 0.25, text: 'Main Hall', details: 'The central prayer hall of Ralong Monastery.' }
       ]
     };
 
     let currentIndex = 0;
     let markersPlugin = null;
 
-    // Viewer
     const viewer = new PhotoSphereViewer.Viewer({
       container: document.getElementById('viewer'),
       panorama: panoramas[currentIndex].src,
@@ -189,47 +288,60 @@
 
     function addHotspots(index) {
       markersPlugin.clearMarkers();
-      document.getElementById('hotspotToolbar').innerHTML = ""; // clear toolbar
+      document.getElementById('hotspotToolbar').innerHTML = "";
 
       const list = hotspots[index+1] || [];
       list.forEach((h, i) => {
-        // Add marker in panorama
         markersPlugin.addMarker({
           id: `p${index+1}_h${i}`,
           longitude: h.lon,
           latitude: h.lat,
           html: markerHtml(h.text),
           anchor: 'bottom center',
-          tooltip: {
-            content: `<b>${h.text}</b><br>${h.details}`,
-            position: 'top center'
-          },
+          tooltip: { content: `<b>${h.text}</b><br>${h.details}`, position: 'top center' },
           visible: true
         });
 
-        // Add button in toolbar
+        markersPlugin.on('select-marker', (e, marker) => {
+          if(marker.config.id === `p${index+1}_h${i}`){
+            document.getElementById('infoTitle').innerText = h.text;
+            document.getElementById('infoDetails').innerText = h.details;
+            document.getElementById('infoPanel').classList.add('active');
+          }
+        });
+
         const btn = document.createElement("button");
         btn.className = "hotspot-btn";
         btn.innerText = h.text;
         btn.onclick = () => {
-          viewer.animate({
-            longitude: h.lon,
-            latitude: h.lat,
-            speed: "2rpm"
-          });
+          viewer.animate({ longitude: h.lon, latitude: h.lat, speed: "2rpm" });
+          document.getElementById('infoTitle').innerText = h.text;
+          document.getElementById('infoDetails').innerText = h.details;
+          document.getElementById('infoPanel').classList.add('active');
         };
         document.getElementById('hotspotToolbar').appendChild(btn);
       });
     }
 
     function showPanorama(index) {
-      currentIndex = (index + panoramas.length) % panoramas.length;
-      viewer.setPanorama(panoramas[currentIndex].src, { caption: panoramas[currentIndex].name })
-        .then(() => addHotspots(currentIndex));
+      const overlay = document.getElementById('fadeOverlay');
+      overlay.style.opacity = "1"; 
+      setTimeout(() => {
+        currentIndex = (index + panoramas.length) % panoramas.length;
+        viewer.setPanorama(panoramas[currentIndex].src, { caption: panoramas[currentIndex].name })
+          .then(() => {
+            addHotspots(currentIndex);
+            overlay.style.opacity = "0";
+          });
+      }, 500);
     }
 
     document.getElementById('prevBtn').addEventListener('click', () => showPanorama(currentIndex - 1));
     document.getElementById('nextBtn').addEventListener('click', () => showPanorama(currentIndex + 1));
+
+    document.getElementById('closePanel').addEventListener('click', () => {
+      document.getElementById('infoPanel').classList.remove('active');
+    });
   </script>
 </body>
 </html>
