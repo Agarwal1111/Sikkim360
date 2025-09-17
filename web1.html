@@ -1,0 +1,235 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Sikkim Monasteries 360 — Stylish Hotspots</title>
+
+  <!-- Photo Sphere Viewer CSS + Markers plugin CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photo-sphere-viewer@4/dist/photo-sphere-viewer.min.css"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photo-sphere-viewer@4/dist/plugins/markers.css"/>
+
+  <style>
+    body {
+      margin:0;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      font-family:Arial, sans-serif;
+      background:#fafafa;
+    }
+    h2 { margin:16px 0 8px; }
+
+    #viewer {
+      width: 80%;
+      max-width: 900px;
+      height: 480px;
+      margin:12px 0 12px;
+      border-radius:10px;
+      box-shadow:0 6px 18px rgba(0,0,0,0.08);
+      background:#000;
+    }
+
+    #controls {
+      display:flex;
+      justify-content:center;
+      gap:12px;
+      margin-bottom:12px;
+    }
+    button {
+      padding:8px 14px;
+      font-size:15px;
+      border:none;
+      border-radius:8px;
+      cursor:pointer;
+      background:#007bff;
+      color:white;
+      transition:0.2s;
+    }
+    button:hover { background:#0056b3; }
+
+    /* 🔥 Stylish Hotspot Marker */
+    .hotspot-marker {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #ffcc33 30%, #ff9900 70%);
+      box-shadow: 0 0 10px rgba(255, 204, 51, 0.8), 0 0 20px rgba(255, 153, 0, 0.5);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%   { box-shadow: 0 0 6px rgba(255,204,51,0.8), 0 0 10px rgba(255,153,0,0.5); }
+      50%  { box-shadow: 0 0 15px rgba(255,204,51,1), 0 0 25px rgba(255,153,0,0.8); }
+      100% { box-shadow: 0 0 6px rgba(255,204,51,0.8), 0 0 10px rgba(255,153,0,0.5); }
+    }
+
+    .hotspot-label {
+      margin-left: 8px;
+      background: rgba(0,0,0,0.65);
+      padding: 6px 10px;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+    .psv-hotspot {
+      display: flex;
+      align-items: center;
+      white-space: nowrap;
+    }
+
+    /* 📋 Hotspot toolbar styles */
+    #hotspotToolbar {
+      display:flex;
+      flex-wrap:wrap;
+      justify-content:center;
+      gap:8px;
+      max-width:900px;
+      margin-bottom:20px;
+    }
+    .hotspot-btn {
+      background: linear-gradient(135deg,#ff9800,#ff5722);
+      border:none;
+      color:white;
+      font-size:13px;
+      padding:6px 10px;
+      border-radius:6px;
+      cursor:pointer;
+      transition:0.2s;
+      box-shadow:0 2px 6px rgba(0,0,0,0.2);
+    }
+    .hotspot-btn:hover {
+      background: linear-gradient(135deg,#ffb74d,#ff7043);
+      transform:translateY(-2px);
+    }
+  </style>
+</head>
+<body>
+  <h2>Sikkim Monasteries 360° — Stylish Hotspots</h2>
+  <div id="viewer"></div>
+  <div id="controls">
+    <button id="prevBtn">⬅ Previous</button>
+    <button id="nextBtn">Next ➡</button>
+  </div>
+  <div id="hotspotToolbar"></div>
+
+  <!-- Dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.147/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/uevent@2/browser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/photo-sphere-viewer@4/dist/photo-sphere-viewer.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/photo-sphere-viewer@4/dist/plugins/markers.min.js"></script>
+
+  <script>
+    // Panoramas
+    const panoramas = [
+      { src: '1.jpg', name: 'Lingdum (Ranka) Monastery' },
+      { src: '2.jpg', name: 'Enchey Monastery' },
+      { src: '3.jpg', name: 'Tashiding Monastery' },
+      { src: '4.jpg', name: 'Rumtek Monastery' },
+      { src: '5.jpg', name: 'Pemayangtse Monastery' },
+      { src: '6.jpg', name: 'Sanga Chelling Monastery' },
+      { src: '7.jpg', name: 'Ralong Monastery' }
+    ];
+
+    // Hotspots with details
+    const hotspots = {
+      1: [
+        { lon: 3.1422, lat: -0.0364, text: 'Main Prayer Hall', details: 'The central hall of Lingdum Monastery.' },
+        { lon: 0.1544, lat: -0.0421, text: 'Entrance Gate', details: 'Grand entryway adorned with prayer flags.' }
+      ],
+      2: [
+        { lon: 3.4087, lat: 0.4676, text: 'Monastery Roof', details: 'Stunning views of Gangtok and hills.' },
+        { lon: 6.1936, lat: 0.0475, text: 'Stupa Area', details: 'Sacred chortens representing relics.' }
+      ],
+      3: [
+        { lon: 2.1304, lat: 0.3445, text: 'Main Shrine', details: 'Tashiding’s sacred shrine.' },
+        { lon: 5.6920, lat: -0.4781, text: 'Courtyard', details: 'Open space for monks and ceremonies.' }
+      ],
+      4: [
+        { lon: 0.8297, lat: 0.2808, text: 'Main Entrance', details: 'Gate leading to inner courtyard.' },
+        { lon: 0.1813, lat: 0.2326, text: 'Viewpoint', details: 'Overlooks Gangtok valley and peaks.' }
+      ],
+      5: [
+        { lon: 3.0980, lat: 0.3007, text: 'Prayer Hall', details: 'Houses ancient scriptures and relics.' },
+        { lon: 0.0393, lat: 0.4537, text: 'Upper Shrine', details: 'Sacred shrine with Tibetan art.' }
+      ],
+      6: [
+        { lon: 2.9770, lat: -0.2379, text: 'Monastery Yard', details: 'Open yard for rituals and festivals.' },
+        { lon: 6.2507, lat: 0.5180, text: 'Stupa', details: 'Spiritual stupa surrounded by prayer wheels.' }
+      ],
+      7: [
+        // Add when ready
+      ]
+    };
+
+    let currentIndex = 0;
+    let markersPlugin = null;
+
+    // Viewer
+    const viewer = new PhotoSphereViewer.Viewer({
+      container: document.getElementById('viewer'),
+      panorama: panoramas[currentIndex].src,
+      caption: panoramas[currentIndex].name,
+      plugins: [[PhotoSphereViewer.MarkersPlugin, { markers: [] }]],
+      touchmoveTwoFingers: true,
+    });
+
+    viewer.on('ready', () => {
+      markersPlugin = viewer.getPlugin(PhotoSphereViewer.MarkersPlugin);
+      addHotspots(currentIndex);
+    });
+
+    function markerHtml(label) {
+      return `<div class="psv-hotspot">
+                <div class="hotspot-marker"></div>
+                <span class="hotspot-label">${label}</span>
+              </div>`;
+    }
+
+    function addHotspots(index) {
+      markersPlugin.clearMarkers();
+      document.getElementById('hotspotToolbar').innerHTML = ""; // clear toolbar
+
+      const list = hotspots[index+1] || [];
+      list.forEach((h, i) => {
+        // Add marker in panorama
+        markersPlugin.addMarker({
+          id: `p${index+1}_h${i}`,
+          longitude: h.lon,
+          latitude: h.lat,
+          html: markerHtml(h.text),
+          anchor: 'bottom center',
+          tooltip: {
+            content: `<b>${h.text}</b><br>${h.details}`,
+            position: 'top center'
+          },
+          visible: true
+        });
+
+        // Add button in toolbar
+        const btn = document.createElement("button");
+        btn.className = "hotspot-btn";
+        btn.innerText = h.text;
+        btn.onclick = () => {
+          viewer.animate({
+            longitude: h.lon,
+            latitude: h.lat,
+            speed: "2rpm"
+          });
+        };
+        document.getElementById('hotspotToolbar').appendChild(btn);
+      });
+    }
+
+    function showPanorama(index) {
+      currentIndex = (index + panoramas.length) % panoramas.length;
+      viewer.setPanorama(panoramas[currentIndex].src, { caption: panoramas[currentIndex].name })
+        .then(() => addHotspots(currentIndex));
+    }
+
+    document.getElementById('prevBtn').addEventListener('click', () => showPanorama(currentIndex - 1));
+    document.getElementById('nextBtn').addEventListener('click', () => showPanorama(currentIndex + 1));
+  </script>
+</body>
+</html>

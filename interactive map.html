@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sikkim Tourism Map</title>
+  
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css"/>
+  <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css"/>
+  <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+
+  <style>
+    body { margin: 0; padding: 0; }
+    #map { height: 100vh; width: 100%; }
+    .control-box {
+      position: absolute;
+      top: 20px;
+      left: 50px;
+      z-index: 1000;
+      background: white;
+      padding: 15px;
+      border-radius: 12px;
+      box-shadow: 0px 4px 12px rgba(0,0,0,0.15);
+      font-family: Arial, sans-serif;
+      width: 300px;
+    }
+    .control-box input, .control-box select, .control-box button {
+      width: 100%;
+      box-sizing: border-box;
+      margin-bottom: 10px;
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+    #directions {
+      position: absolute;
+      right: 20px;
+      top: 20px;
+      width: 300px;
+      max-height: 80vh;
+      overflow-y: auto;
+      background: white;
+      padding: 15px;
+      border-radius: 12px;
+      box-shadow: 0px 4px 12px rgba(0,0,0,0.2);
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.4;
+      z-index: 1000;
+    }
+    .ui-autocomplete {
+      z-index: 1001;
+      max-height: 200px;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+    /* Hide the default routing machine text panel */
+    .leaflet-routing-container {
+        display: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div class="control-box">
+    <input type="text" id="from" placeholder="Starting location">
+    <input type="text" id="to" placeholder="Destination monastery">
+    <select id="routeType">
+      <option value="road">Road</option>
+      <option value="train" disabled>Train (not available)</option>
+      <option value="flight" disabled>Flight (not available)</option>
+    </select>
+    <button onclick="findRoute()">Find Route</button>
+    <button onclick="clearRoute()">Clear Route</button>
+    <button onclick="useCurrentLocation()">Use Current Location</button>
+  </div>
+  <div id="directions"><b>Directions will appear here...</b></div>
+
+  <script>
+    var map = L.map('map').setView([27.6, 88.4], 9);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    var control = null;
+    var currentRouteBounds = null;
+
+    var monasteries = [
+      { name: "Rumtek Monastery", coords: [27.3172, 88.6225] },
+      { name: "Pemayangtse Monastery", coords: [27.3055, 88.2396] },
+      { name: "Tashiding Monastery", coords: [27.2888, 88.2664] },
+      { name: "Phodong Monastery", coords: [27.4277, 88.6132] },
+      { name: "Enchey Monastery", coords: [27.3452, 88.6138] },
+      { name: "Ralang Monastery", coords: [27.2815, 88.3655] },
+      { name: "Dubdi Monastery", coords: [27.3800, 88.2620] },
+      { name: "Kartok Monastery", coords: [27.2992, 88.6110] }
+    ];
+
+    var startingPoints = [
+      "Delhi", "Kolkata", "Mumbai", "Gangtok", "Darjeeling", "Siliguri",
+      "Bagdogra Airport", "New Jalpaiguri Railway Station", "Pakyong Airport",
+      "MG Marg Gangtok", "SNT Bus Stand Gangtok", "Rangpo Checkpost", "Namchi", "Pelling"
+    ];
+
+    monasteries.forEach(m => {
+      L.marker(m.coords).addTo(map)
+        .bindPopup(`<b>${m.name}</b><br><button onclick="setDestination('${m.name}')">Go Here</button>`);
+    });
+
+    function setDestination(name) {
+      document.getElementById("to").value = name;
+    }
+
+    $(function() {
+      $("#from").autocomplete({ source: startingPoints, minLength: 1 });
+      $("#to").autocomplete({ source: monasteries.map(m => m.name), minLength: 1 });
+    });
+
+    function findRoute() {
+      let from = document.getElementById("from").value.trim();
+      let to = document.getElementById("to").value.trim();
+
+      if (!from || !to) {
+        alert("Please enter both start and destination!");
+        return;
+      }
+
+      clearRoute();
+
+      Promise.all([
+        fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(from)}`).then(res => res.json()),
+        fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(to)}`).then(res => res.json())
+      ]).then(locations => {
+        if (locations[0] && locations[0].length > 0 && locations[1] && locations[1].length > 0) {
+          let start = L.latLng(locations[0][0].lat, locations[0][0].lon);
+          let end = L.latLng(locations[1][0].lat, locations[1][0].lon);
+          
+          control = L.Routing.control({
+            waypoints: [start, end],
+            routeWhileDragging: true,
+            fitSelectedRoutes: true
+          }).addTo(map);
+
+          control.on('routesfound', function(e) {
+            let route = e.routes[0];
+            let summary = route.summary;
+            
+            currentRouteBounds = L.latLngBounds(route.coordinates);
+            map.fitBounds(currentRouteBounds, { padding: [50, 50] });
+
+            let directionsHTML = `<b>Total Distance:</b> ${(summary.totalDistance/1000).toFixed(1)} km<br>
+                                  <b>Time:</b> ${(summary.totalTime/3600).toFixed(1)} hrs<hr><ol>`;
+            route.instructions.forEach(s => { directionsHTML += `<li>${s.text}</li>`; });
+            directionsHTML += `</ol>`;
+            document.getElementById("directions").innerHTML = directionsHTML;
+          });
+
+        } else {
+          alert("Could not find one or both locations. Please be more specific.");
+        }
+      }).catch(error => {
+        console.error("Error finding locations:", error);
+        alert("An error occurred while trying to find the locations.");
+      });
+    }
+
+    function clearRoute() {
+      if (control) {
+        map.removeControl(control);
+        control = null;
+      }
+      currentRouteBounds = null;
+      document.getElementById("directions").innerHTML = "<b>Directions will appear here...</b>";
+    }
+
+    function useCurrentLocation() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(pos) {
+          document.getElementById("from").value = `${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`;
+        }, function() {
+          alert("Unable to fetch current location. Please grant permission.");
+        });
+      } else {
+        alert("Geolocation is not supported by your browser.");
+      }
+    }
+  </script>
+</body>
+</html>
